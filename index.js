@@ -41,3 +41,9 @@ class Header extends React.Component {
 }
 
 ReactDOM.render(React.createElement(App), document.getElementById("root"));
+
+/* 
+  Todos:
+  1. Set css class for elements (and other attributes)
+  2. Render multiple children in an element
+*/
