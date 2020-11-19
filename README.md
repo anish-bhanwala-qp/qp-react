@@ -1,2 +1,2 @@
 # qp-react
-Our own version of React
+Learn React by trying to create it from scratch.
