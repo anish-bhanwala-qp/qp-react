@@ -1,0 +1,35 @@
+.header {
+    margin: 0;
+    padding: 20px;
+    font-size: 32px;
+}
+
+.content {
+    padding: 20px;
+    background: #ccc;
+}
+
+ul {
+    margin: 0;
+    padding: 20px;
+    list-style: none;
+}
+
+li {
+    display: inline-block;
+    padding: 10px;
+}
+
+.main-content {
+    display: inline-block;
+    width: 70%;
+}
+
+.left-nav {
+    display: inline-block;
+    width: 15%;
+}
+
+.active {
+    text-decoration: underline;
+}
