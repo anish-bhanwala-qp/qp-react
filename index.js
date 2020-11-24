@@ -42,11 +42,21 @@ const React = {
 
     let reactComponent = new component(attributes);
 
-    return reactComponent.render();
+    let domElement = reactComponent.render();
+    reactComponent.domElement = domElement;
+
+    return domElement;
   },
   Component: class Component {
     constructor(props) {
       this.props = props;
+    }
+
+    setState(newState) {
+      this.state = newState;
+      let newDomElement = this.render();
+      this.domElement.parentNode.replaceChild(newDomElement, this.domElement);
+      this.domElement = newDomElement;
     }
   },
 };
@@ -68,7 +78,7 @@ class Header extends React.Component {
     }
     return React.createElement(
       "h1",
-      { class: "header", style: "text-decoration: underline;" },
+      { class: "header", style: this.props.style, onClick: this.props.onClick },
       this.props.text
     );
   }
@@ -91,12 +101,12 @@ class NavLink extends React.Component {
 class LeftNav extends React.Component {
   constructor(props) {
     super(props);
-    this.activeLinkText = "Edit";
+    this.state = { activeLinkText: "Edit" };
   }
 
   onLinkClick(newActiveLinkText) {
-    console.log("clicked");
-    this.activeLinkText = newActiveLinkText;
+    console.log("clicked", this);
+    this.setState({ activeLinkText: newActiveLinkText });
   }
 
   render() {
@@ -104,8 +114,8 @@ class LeftNav extends React.Component {
     const navLinkElements = navLinkTexts.map((text) =>
       React.createElement(NavLink, {
         text,
-        active: this.activeLinkText === text,
-        onLinkClick: this.onLinkClick,
+        active: this.state.activeLinkText === text,
+        onLinkClick: () => this.onLinkClick(text),
       })
     );
 
@@ -118,8 +128,26 @@ class LeftNav extends React.Component {
 }
 
 class App extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      style: "",
+    };
+
+    this.toggleUnderline = this.toggleUnderline.bind(this);
+  }
+
+  toggleUnderline() {
+    this.setState({ style: "text-decoration: underline;" });
+  }
+
   render() {
-    const header = React.createElement(Header, { text: "QuestionPro" });
+    const header = React.createElement(Header, {
+      text: "QuestionPro",
+      style: this.state.style,
+      onClick: this.toggleUnderline,
+    });
+
     const leftNav = React.createElement(LeftNav);
     const mainContent = React.createElement(Content, {
       class: "main-content",
@@ -148,6 +176,8 @@ ReactDOM.render(React.createElement(App), document.getElementById("root"));
 */
 
 /* 
-  Todos:
-  1. Add state functionality (this.setState())
+  - We don't want to create class objects/components again.
+  - But we want to create DOM elements again.
+  Why? 
+  We want to don't want to reset instance variables and state of class objects/components.
 */
