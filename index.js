@@ -44,14 +44,16 @@ const React = {
       return this.createDomElement(component, attributes, contents);
     }
 
+    const attributesWithChildren = { ...attributes, children: contents };
+
     const clazz = component;
     const key = attributes && attributes.key ? attributes.key : clazz.name;
     let classComoponent;
     if (allComponents[key]) {
       classComoponent = allComponents[key];
-      classComoponent.updateProps(attributes);
+      classComoponent.updateProps(attributesWithChildren);
     } else {
-      classComoponent = new clazz(attributes);
+      classComoponent = new clazz(attributesWithChildren);
       allComponents[key] = classComoponent;
     }
 
@@ -174,6 +176,15 @@ class App extends React.Component {
   }
 }
 
+(function () {})();
+class Container extends React.Component {
+  render() {
+    return React.createElement("div", { class: "counter-container" }, [
+      this.props.children,
+    ]);
+  }
+}
+
 class CounterApp extends React.Component {
   constructor() {
     super();
@@ -194,14 +205,15 @@ class CounterApp extends React.Component {
   }
 
   render() {
-    {
-      /* <div>this.state.count <button>-</button> <button>+</button></div> */
-    }
-    return React.createElement("div", null, [
-      `Count: ${this.state.count} `,
-      React.createElement("button", { onClick: this.decrement }, "-"),
-      React.createElement("button", { onClick: this.increment }, "+"),
-    ]);
+    return React.createElement(
+      Container,
+      null,
+      React.createElement("div", null, [
+        `Count: ${this.state.count} `,
+        React.createElement("button", { onClick: this.decrement }, "-"),
+        React.createElement("button", { onClick: this.increment }, "+"),
+      ])
+    );
   }
 }
 
@@ -209,6 +221,8 @@ ReactDOM.render(
   React.createElement(CounterApp),
   document.getElementById("root")
 );
+
+ReactDOM.render(React.createElement(App), document.getElementById("root2"));
 
 /* 
   First session
@@ -240,7 +254,8 @@ ReactDOM.render(
 
   Third/Fourth session
   1. Got the setState call working by caching component classes.
-  
+  2. Handle passing children in the props.
 
-
+  Todos:
+  1. Handle two apps on the same page.
 */
