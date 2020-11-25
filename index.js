@@ -1,5 +1,7 @@
 const allComponents = {};
 
+let currentOwner;
+
 const ReactDOM = {
   render(reactElement, rootElement) {
     rootElement.appendChild(reactElement);
@@ -48,17 +50,28 @@ const React = {
 
     const clazz = component;
     const key = attributes && attributes.key ? attributes.key : clazz.name;
+
     let classComoponent;
-    if (allComponents[key]) {
-      classComoponent = allComponents[key];
-      classComoponent.updateProps(attributesWithChildren);
-    } else {
+    if (!currentOwner) {
       classComoponent = new clazz(attributesWithChildren);
+      classComoponent.childComponents = {};
       allComponents[key] = classComoponent;
+    } else {
+      if (currentOwner.childComponents[key]) {
+        classComoponent = currentOwner.childComponents[key];
+        classComoponent.updateProps(attributesWithChildren);
+      } else {
+        classComoponent = new clazz(attributesWithChildren);
+        classComoponent.childComponents = {};
+        currentOwner.childComponents[key] = classComoponent;
+      }
     }
 
+    const prevOwner = currentOwner;
+    currentOwner = classComoponent;
     let prevDom = classComoponent.render();
     classComoponent.prevDom = prevDom;
+    currentOwner = prevOwner;
 
     return prevDom;
   },
@@ -72,6 +85,7 @@ const React = {
     }
 
     setState(newState) {
+      currentOwner = this;
       this.state = newState;
       let newDom = this.render();
       this.prevDom.parentNode.replaceChild(newDom, this.prevDom);
@@ -80,12 +94,18 @@ const React = {
   },
 };
 
+class H4 extends React.Component {
+  render() {
+    return React.createElement("h4", null, this.props.content);
+  }
+}
+
 class Content extends React.Component {
   render() {
     return React.createElement(
       "div",
       { class: `content ${this.props.class}` },
-      this.props.content
+      React.createElement(H4, { content: this.props.content })
     );
   }
 }
@@ -176,51 +196,52 @@ class App extends React.Component {
   }
 }
 
-(function () {})();
-class Container extends React.Component {
-  render() {
-    return React.createElement("div", { class: "counter-container" }, [
-      this.props.children,
-    ]);
-  }
-}
-
-class CounterApp extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      count: 0,
-    };
-
-    this.increment = this.increment.bind(this);
-    this.decrement = this.decrement.bind(this);
+(function () {
+  class Container extends React.Component {
+    render() {
+      return React.createElement("div", { class: "counter-container" }, [
+        this.props.children,
+      ]);
+    }
   }
 
-  increment() {
-    this.setState({ count: this.state.count + 1 });
+  class CounterApp extends React.Component {
+    constructor() {
+      super();
+      this.state = {
+        count: 0,
+      };
+
+      this.increment = this.increment.bind(this);
+      this.decrement = this.decrement.bind(this);
+    }
+
+    increment() {
+      this.setState({ count: this.state.count + 1 });
+    }
+
+    decrement() {
+      this.setState({ count: this.state.count - 1 });
+    }
+
+    render() {
+      return React.createElement(
+        Container,
+        null,
+        React.createElement("div", null, [
+          `Count: ${this.state.count} `,
+          React.createElement("button", { onClick: this.decrement }, "-"),
+          React.createElement("button", { onClick: this.increment }, "+"),
+        ])
+      );
+    }
   }
 
-  decrement() {
-    this.setState({ count: this.state.count - 1 });
-  }
-
-  render() {
-    return React.createElement(
-      Container,
-      null,
-      React.createElement("div", null, [
-        `Count: ${this.state.count} `,
-        React.createElement("button", { onClick: this.decrement }, "-"),
-        React.createElement("button", { onClick: this.increment }, "+"),
-      ])
-    );
-  }
-}
-
-ReactDOM.render(
-  React.createElement(CounterApp),
-  document.getElementById("root")
-);
+  ReactDOM.render(
+    React.createElement(CounterApp),
+    document.getElementById("root")
+  );
+})();
 
 ReactDOM.render(React.createElement(App), document.getElementById("root2"));
 
