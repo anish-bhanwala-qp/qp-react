@@ -1,3 +1,5 @@
+const allComponents = {};
+
 const ReactDOM = {
   render(reactElement, rootElement) {
     rootElement.appendChild(reactElement);
@@ -5,58 +7,73 @@ const ReactDOM = {
 };
 
 const React = {
-  createElement(component, attributes, contents) {
-    if (typeof component === "string") {
-      let element = document.createElement(component);
-      if (contents) {
-        if (!Array.isArray(contents)) {
-          contents = [contents];
+  createDomElement(component, attributes, contents) {
+    let element = document.createElement(component);
+    if (contents) {
+      if (!Array.isArray(contents)) {
+        contents = [contents];
+      }
+
+      contents.forEach((content) => {
+        if (typeof content === "string") {
+          const textNode = document.createTextNode(content);
+          element.appendChild(textNode);
+        } else {
+          // This element is created by React.createElement
+          element.appendChild(content);
         }
-
-        contents.forEach((content) => {
-          if (typeof content === "string") {
-            const textNode = document.createTextNode(content);
-            element.appendChild(textNode);
-          } else {
-            // This element is created by React.createElement
-            element.appendChild(content);
-          }
-        });
-      }
-      if (attributes != null && typeof attributes === "object") {
-        Object.keys(attributes).forEach((attributeName) => {
-          const value = attributes[attributeName];
-          // This is an event listener
-          if (attributeName.startsWith("on")) {
-            const eventName = attributeName.substr(2).toLowerCase();
-            console.log(eventName);
-            element.addEventListener(eventName, value);
-          } else {
-            element.setAttribute(attributeName, value);
-          }
-        });
-      }
-
-      return element;
+      });
+    }
+    if (attributes != null && typeof attributes === "object") {
+      Object.keys(attributes).forEach((attributeName) => {
+        const value = attributes[attributeName];
+        // This is an event listener
+        if (attributeName.startsWith("on")) {
+          const eventName = attributeName.substr(2).toLowerCase();
+          element.addEventListener(eventName, value);
+        } else {
+          element.setAttribute(attributeName, value);
+        }
+      });
     }
 
-    let reactComponent = new component(attributes);
+    return element;
+  },
+  createElement(component, attributes, contents) {
+    if (typeof component === "string") {
+      return this.createDomElement(component, attributes, contents);
+    }
 
-    let domElement = reactComponent.render();
-    reactComponent.domElement = domElement;
+    const clazz = component;
+    const key = attributes && attributes.key ? attributes.key : clazz.name;
+    let classComoponent;
+    if (allComponents[key]) {
+      classComoponent = allComponents[key];
+      classComoponent.updateProps(attributes);
+    } else {
+      classComoponent = new clazz(attributes);
+      allComponents[key] = classComoponent;
+    }
 
-    return domElement;
+    let prevDom = classComoponent.render();
+    classComoponent.prevDom = prevDom;
+
+    return prevDom;
   },
   Component: class Component {
     constructor(props) {
       this.props = props;
     }
 
+    updateProps(newProps) {
+      this.props = newProps;
+    }
+
     setState(newState) {
       this.state = newState;
-      let newDomElement = this.render();
-      this.domElement.parentNode.replaceChild(newDomElement, this.domElement);
-      this.domElement = newDomElement;
+      let newDom = this.render();
+      this.prevDom.parentNode.replaceChild(newDom, this.prevDom);
+      this.prevDom = newDom;
     }
   },
 };
@@ -86,7 +103,6 @@ class Header extends React.Component {
 
 class NavLink extends React.Component {
   render() {
-    console.log(this.props);
     return React.createElement(
       "li",
       {
@@ -105,7 +121,6 @@ class LeftNav extends React.Component {
   }
 
   onLinkClick(newActiveLinkText) {
-    console.log("clicked", this);
     this.setState({ activeLinkText: newActiveLinkText });
   }
 
@@ -116,6 +131,7 @@ class LeftNav extends React.Component {
         text,
         active: this.state.activeLinkText === text,
         onLinkClick: () => this.onLinkClick(text),
+        key: text,
       })
     );
 
@@ -158,7 +174,41 @@ class App extends React.Component {
   }
 }
 
-ReactDOM.render(React.createElement(App), document.getElementById("root"));
+class CounterApp extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      count: 0,
+    };
+
+    this.increment = this.increment.bind(this);
+    this.decrement = this.decrement.bind(this);
+  }
+
+  increment() {
+    this.setState({ count: this.state.count + 1 });
+  }
+
+  decrement() {
+    this.setState({ count: this.state.count - 1 });
+  }
+
+  render() {
+    {
+      /* <div>this.state.count <button>-</button> <button>+</button></div> */
+    }
+    return React.createElement("div", null, [
+      `Count: ${this.state.count} `,
+      React.createElement("button", { onClick: this.decrement }, "-"),
+      React.createElement("button", { onClick: this.increment }, "+"),
+    ]);
+  }
+}
+
+ReactDOM.render(
+  React.createElement(CounterApp),
+  document.getElementById("root")
+);
 
 /* 
   First session
@@ -176,8 +226,21 @@ ReactDOM.render(React.createElement(App), document.getElementById("root"));
 */
 
 /* 
-  - We don't want to create class objects/components again.
-  - But we want to create DOM elements again.
-  Why? 
-  We want to don't want to reset instance variables and state of class objects/components.
+  
+
+  What is React?
+  1. A component is a class that extends React.Component and implements render method.  
+  2. A component can return either a component or a DOM element.
+  3. A component can be passed props from the parent component.
+  4. A component can have a State:
+      a. State change causes component to re-render.
+      b. Rendering a component shouldn't reset its state. 
+      c. Rendering a component shouldn't reset state of its child components.
+
+
+  Third/Fourth session
+  1. Got the setState call working by caching component classes.
+  
+
+
 */
